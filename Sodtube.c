@@ -16,14 +16,10 @@ float R = 1.0;           // Dimensionless specific gas constant
 float GAMA = (7./5.);     // Ratio of specific heats
 float CV =R/(GAMA-1.0);  // Cv
 float CP =CV + R;       // Cp
-float *olddens;     //density
-float *newdens;
-float *oldxv;       //velocity in x
-float *newxv;
-float *oldtemp;     //temprature
-float *newtemp;
-float *oldpress;    //pressure
-float *newpress;
+float *dens;     //density
+float *xv;       //velocity in x
+float *temp;     //temprature
+float *press;    //pressure
 float *cx;
 float U[N][3];
 float U_new[N][3];
@@ -76,14 +72,10 @@ int main()
 void Allocate_Memory()
 {
 	size_t size = N*sizeof(float);
-	olddens = (float*)malloc(size);
-	newdens = (float*)malloc(size);
-        oldxv   = (float*)malloc(size);
-       	newxv   = (float*)malloc(size);
-       	oldtemp = (float*)malloc(size);
-       	newtemp = (float*)malloc(size);
-        oldpress= (float*)malloc(size);
-        newpress= (float*)malloc(size);
+	dens = (float*)malloc(size);
+        xv   = (float*)malloc(size);
+       	temp = (float*)malloc(size);
+        press= (float*)malloc(size);
        	cx = (float*)malloc(size);
 	F = (float*)malloc(3*sizeof(float));
      	FL= (float*)malloc(3*sizeof(float));
@@ -99,21 +91,21 @@ omp_set_num_threads(num_threads);
 	if(i > 0.5*N)
 	{
 	//Initialize the right side gas condition
-	  olddens[i] = 0.125;
-          oldtemp[i] = 0.1;
-	  oldxv[i] = 0.0;
+	  dens[i] = 0.125;
+          temp[i] = 0.1;
+	  xv[i] = 0.0;
 	}
 	else
 	{
         //Initialize the left side gas condition
-	  olddens[i] = 1.0;
-          oldtemp[i] = 1.0;
-          oldxv[i] = 0.0;
+	  dens[i] = 1.0;
+          temp[i] = 1.0;
+          xv[i] = 0.0;
 	}
 	cx[i] = (i - 0.5)* dx;
-	U[i][0] = olddens[i];
-        U[i][1] = olddens[i]*oldxv[i];
-        U[i][2] = olddens[i]*(CV*oldtemp[i] + 0.5*oldxv[i]*oldxv[i]);
+	U[i][0] = dens[i];
+        U[i][1] = dens[i]*xv[i];
+        U[i][2] = dens[i]*(CV*temp[i] + 0.5*xv[i]*xv[i]);
 
    }
 }
@@ -125,11 +117,11 @@ omp_set_num_threads(num_threads);
 #pragma omp parallel for private(F0,F1,F2,a,M,M2)
 	for(i =0;i < N;i++)
 	{
-	        F0 = olddens[i]*oldxv[i];
-                F1 = olddens[i]*(oldxv[i]*oldxv[i] + R*oldtemp[i]);
-                F2 = oldxv[i]*(U[i][2] + olddens[i]*R*oldtemp[i]);
-		 a = sqrt(GAMA*R*oldtemp[i]);
-		 M = oldxv[i] / a;
+	        F0 = dens[i]*xv[i];
+                F1 = dens[i]*(xv[i]*xv[i] + R*temp[i]);
+                F2 = xv[i]*(U[i][2] + dens[i]*R*temp[i]);
+		 a = sqrt(GAMA*R*temp[i]);
+		 M = xv[i] / a;
 		if (M > 1.0)
 		  {M = 1.0;}
 		else if(M < -1.0)
@@ -205,10 +197,10 @@ void CalculateResult()
 		  U_new[i][j] = U[i][j] - (dt/dx)*(FR[j]-FL[j]);
 		}
 
-		olddens[i] = U_new[i][0];
-		oldxv[i] = U_new[i][1]/U_new[i][0];
-		oldtemp[i] = ((U_new[i][2]/olddens[i]) - 0.5*oldxv[i]*oldxv[i])/CV;
-		oldpress[i] = (oldtemp[i]*R)*olddens[i];
+		dens[i] = U_new[i][0];
+		xv[i] = U_new[i][1]/U_new[i][0];
+		temp[i] = ((U_new[i][2]/dens[i]) - 0.5*xv[i]*xv[i])/CV;
+		press[i] = (temp[i]*R)*dens[i];
 
 
 	}
@@ -224,14 +216,10 @@ omp_set_num_threads(num_threads);
 }
 void Free()
 {
-	free(olddens);
-	free(newdens);
-        free(oldxv);
-        free(newxv);
-        free(oldtemp);
-        free(newtemp);
-        free(oldpress);
-        free(newpress);
+	free(dens);
+        free(xv);
+        free(temp);
+        free(press);
         free(cx);
         free(F);
         free(FL);
@@ -245,7 +233,7 @@ void Save_Results() {
 	printf("Saving...");
 	pFile = fopen("Results.txt","w");
 	for (i = 0; i < N; i++) {
-		fprintf(pFile, "%g\t %g\t %g\n", oldtemp[i],oldxv[i],oldpress[i]);
+		fprintf(pFile, "%g\t %g\t %g\n", temp[i],xv[i],press[i]);
 	}
 	fclose(pFile);
 	printf("Done.\n");
