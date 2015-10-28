@@ -12,10 +12,11 @@
 #define dx (L/N)   // Width of cell
 #define dt 0.01*dx  // Size of time step
 #define no_steps 20*N  // No. of time steps
-float R = 1.0;           // Dimensionless specific gas constant
-float GAMA = (7./5.);     // Ratio of specific heats
-float CV =R/(GAMA-1.0);  // Cv
-float CP =CV + R;       // Cp
+#define R (1.0)           // Dimensionless specific gas constant
+#define GAMA (7./5.)     // Ratio of specific heats
+#define CV (R/(GAMA-1.0))  // Cv
+#define CP (CV + R)     // Cp
+
 float *dens;     //density
 float *xv;       //velocity in x
 float *temp;     //temprature
